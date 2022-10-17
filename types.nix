@@ -749,7 +749,7 @@ rec {
             ${concatStringsSep " " (mapAttrsToList (n: v: "-o ${n}=${v}") config.options)} \
             ${concatStringsSep " " (mapAttrsToList (n: v: "-O ${n}=${v}") config.rootFsOptions)} \
             ''${ZFSDEVICES_${config.name}}
-          ${concatMapStrings (dataset: dataset._create config.name) (attrValues config.datasets)}
+          ${concatMapStrings (dataset: dataset._create config.name) (toposort (a: b: (hasPrefix a.name b.name)) (attrValues config.datasets)).result}
         '';
       };
       _mount = mkOption {
