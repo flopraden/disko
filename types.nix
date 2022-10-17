@@ -729,6 +729,14 @@ rec {
         type = types.listOf types.str;
         default = [];
       };
+      preCommands = mkOption {
+        type = types.listOf types.str;
+        default = [];
+      };
+      postCommands = mkOption {
+        type = types.listOf types.str;
+        default = [];
+      };
       datasets = mkOption {
         type = types.attrsOf zfs_dataset;
       };
@@ -744,11 +752,13 @@ rec {
         readOnly = true;
         type = types.str;
         default = ''
+          ${concatStringsSep "\n" config.preCommands}
           zpool create ${config.name} \
             ${config.mode} \
             ${concatStringsSep " " (mapAttrsToList (n: v: "-o ${n}=${v}") config.options)} \
             ${concatStringsSep " " (mapAttrsToList (n: v: "-O ${n}=${v}") config.rootFsOptions)} \
             ''${ZFSDEVICES_${config.name}}
+          ${concatStringsSep "\n" config.postCommands}
           ${concatMapStrings (dataset: dataset._create config.name) (toposort (a: b: (hasPrefix a.name b.name)) (attrValues config.datasets)).result}
         '';
       };
@@ -816,6 +826,14 @@ rec {
         type = types.listOf types.str;
         default = [];
       };
+      preCommands = mkOption {
+        type = types.listOf types.str;
+        default = [];
+      };
+      postCommands = mkOption {
+        type = types.listOf types.str;
+        default = [];
+      };
 
       # filesystem options
       mountpoint = mkOption {
@@ -842,6 +860,7 @@ rec {
         readOnly = true;
         type = types.functionTo types.str;
         default = zpool: ''
+          ${concatStringsSep "\n" config.preCommands}
           zfs create ${zpool}/${config.name} \
             ${concatStringsSep " " (mapAttrsToList (n: v: "-o ${n}=${v}") config.options)} \
             ${optionalString (config.zfs_type == "volume") "-V ${config.size}"}
@@ -849,6 +868,7 @@ rec {
             udevadm trigger --subsystem-match=block; udevadm settle
             ${optionalString (!isNull config.content) (config.content._create "/dev/zvol/${zpool}/${config.name}")}
           ''}
+          ${concatStringsSep "\n" config.postCommands}
         '';
       };
       _mount = mkOption {
